@@ -1,0 +1,63 @@
+[project]
+name = "interag"
+version = "0.1.0"
+description = "Creating a Integration RAG"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Pedro Prates", email = "phprates@me.com"}
+]
+dependencies = [
+    "aiosqlite~=0.20",
+    "lxml~=5.3",
+    "litellm>=1.53.1",
+    "numpy>=1.26.0,<3",
+    "pillow~=10.4",
+    "python-dotenv~=1.0",
+    "requests~=2.26",
+    "beautifulsoup4~=4.12",
+    # "tf-playwright-stealth>=1.1.0",
+    "xxhash~=3.4",
+    "rank-bm25~=0.2",
+    "aiofiles>=24.1.0",
+    "colorama~=0.4",
+    "snowballstemmer~=2.2",
+    "pydantic>=2.10",
+    "pyOpenSSL>=24.3.0",
+    "psutil>=6.1.1",
+    "nltk>=3.9.1",
+    "aiofiles",
+    "rich>=13.9.4",
+    "cssselect>=1.2.0",
+    "httpx==0.27.2",
+    "fake-useragent>=2.0.3",
+    "crawl4ai",
+    "debugpy>=1.8.12",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.optional-dependencies]
+torch = ["torch", "nltk", "scikit-learn"]
+transformer = ["transformers", "tokenizers"]
+cosine = ["torch", "transformers", "nltk"]
+sync = ["selenium"]
+all = [
+    "torch",
+    "nltk",
+    "scikit-learn",
+    "transformers",
+    "tokenizers",
+    "selenium"
+]
+
