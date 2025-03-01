@@ -1,5 +1,6 @@
 from typing import Any
 from langchain_openai import OpenAIEmbeddings
+from utils import check_credentials
 from consts.embeddings import Embeddings
 
 __all__ = ["get_embedding"]
@@ -14,6 +15,8 @@ def get_embedding(type: str) -> Any:
     Returns:
         Any: Embeddings model object
     """
+    check_credentials(type)
+
     match type:
         case "openai":
             return OpenAIEmbeddings(model=Embeddings.OPENAI_EMBEDDING_MODEL)
