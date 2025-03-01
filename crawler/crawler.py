@@ -1,6 +1,7 @@
 import os
 import random
 import logging
+import requests
 from crawl4ai import AsyncWebCrawler
 from crawl4ai.models import CrawlResult, MarkdownGenerationResult
 from crawl4ai.async_configs import CrawlerRunConfig, BrowserConfig, CacheMode
@@ -16,6 +17,8 @@ class Crawler:
         self.verbose = verbose
         self._fit_markdown = fit_markdown
         self._base_data_path = "data"
+        self._pages_path = "pages"
+        self._media_path = "media"
 
         self.browser_config = BrowserConfig(verbose=self.verbose)
         self.crawler_config = CrawlerRunConfig(
@@ -78,7 +81,7 @@ class Crawler:
         description = title if not _description else _description
 
         filename = "_".join(title.lower().strip().split()) + ".md"
-        path_file = os.path.join(self._base_data_path, filename)
+        path_file = os.path.join(self._base_data_path, self._pages_path, filename)
 
         file_metadata = {
             "path": path_file,
@@ -119,10 +122,44 @@ class Crawler:
             url = url.split("#")[0]
             self.queue.add(url)
 
+    def _save_media(self, media: dict | list[dict], page_name: str):
+        """
+        Download and save media files from the crawler, this function should only be called when `media` parameter
+        is set to `True`.
+
+        It is going to be saved inside a subfolder media inside the base crawling folder.
+
+        Currently only images are available
+
+        Args:
+            media (dict | list[dict]): the media variable from the CrawlerResult
+            page_name (str): page name that the crawler sent the media from
+        """
+        logging.warning("Only Images are available to download, Audio and Videos are not yet implemented")
+
+        if isinstance(media, dict):
+            media = media["images"]
+
+        for file in media:
+            url = file["src"]
+
+            file_response = requests.get(url)
+
+            if file_response.status_code == 200:
+                filename = url.split("/")[-1]
+                page_name = "_".join(page_name.lower().strip().split())
+                filepath = os.path.join(self._base_data_path, self._media_path, page_name, filename)
+
+                with open(filepath, "wb") as file:
+                    file.write(file_response.content)
+
+            else:
+                logging.error(f"Failed to download image from {url}")
+
+
     async def crawl(self):
         
         # TODO: Docstring
-        # TODO: Implement media
 
         async with AsyncWebCrawler(browser_config=self.browser_config) as _crawler:
             while not self.queue.empty():
@@ -139,5 +176,10 @@ class Crawler:
                 if not result.success:
                     raise RuntimeError(f"""Something went wrong on Crawler Stage.\n\n{result.error_message}""")
 
-                self._save_file(response=result)
+                file_metadata = self._save_file(response=result)
                 self._update_links_queue(links=result.links)
+
+                if self._media:
+                    self._save_media(
+                        media=result.media, page_name=file_metadata.get("title", "")
+                    )
