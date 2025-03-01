@@ -158,8 +158,13 @@ class Crawler:
 
 
     async def crawl(self):
-        
-        # TODO: Docstring
+        """
+        Crawling from the base page to last page.
+
+        Receives a base URL, crawl the base URL always adding the new URLs found to the Queue to achieve crawling from the entire site.
+
+        Queue is a unique Queue, avoiding to crawl duplicates.
+        """
 
         async with AsyncWebCrawler(browser_config=self.browser_config) as _crawler:
             while not self.queue.empty():
