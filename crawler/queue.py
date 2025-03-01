@@ -25,7 +25,7 @@ class URLQueue:
         raise IndexError("Queue is empty!")
 
     def empty(self) -> bool:
-        return self.__len__() == 0
+        return self.len == 0
 
     def __len__(self) -> int:
         return self.len

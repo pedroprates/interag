@@ -1,4 +1,7 @@
 import os
+import json
+import re
+import shutil
 import random
 import logging
 import requests
@@ -14,8 +17,18 @@ __all__ = ["Crawler"]
 logger = logging.getLogger(__name__)
 
 class Crawler:
-    """ Crawler class responsible to crawl the URL and all the internal links referenced on it """
-    def __init__(self, url: str, media: bool = False, verbose: bool = True, fit_markdown: bool = False):
+    """Crawler class responsible to crawl the URL and all the internal links referenced on it"""
+
+    def __init__(
+        self,
+        url: str,
+        media: bool = False,
+        verbose: bool = True,
+        fit_markdown: bool = False,
+        clean: bool = True,
+        remove_tags: None | list[str] = ["form", "nav", "header"],
+        cache: bool = False,
+    ):
         self._url = url
         self._media = media
         self.verbose = verbose
@@ -23,19 +36,24 @@ class Crawler:
         self._base_data_path = "data"
         self._pages_path = "pages"
         self._media_path = "media"
+        self._remove_tags = remove_tags
+        self._cache = cache
+
+        if clean and os.path.exists(self._base_data_path):
+            shutil.rmtree(self._base_data_path)
 
         crawler_ops = {
             "word_count_threshold": 10,
             "exclude_external_links": True,
             "remove_overlay_elements": True,
             "process_iframes": True,
-            "excluded_tags": ["form"],
-            "cache_mode": CacheMode.ENABLED,
+            "excluded_tags": self._remove_tags,
+            "cache_mode": CacheMode.ENABLED if self._cache else CacheMode.DISABLED,
         }
 
         if self._fit_markdown:
             _prune_filter = PruningContentFilter(
-                threshold=.45,
+                threshold=.8,
                 threshold_type="dynamic",
                 min_word_threshold=5,
             )
@@ -80,6 +98,7 @@ class Crawler:
 
 
     def _save_file(self, response: CrawlResult) -> dict:
+
         """
         Saves the result file from the crawl on a markdown file inside data folder.
 
@@ -97,9 +116,10 @@ class Crawler:
         title = f"unnamed_file_{random.randint(0, 1000)}" if not _title else _title
         description = title if not _description else _description
 
+        title = re.sub(r"[^a-zA-Z0-9]", "", title)
         filename = "_".join(title.lower().strip().split()) + ".md"
         path = os.path.join(self._base_data_path, self._pages_path)
-        
+
         os.makedirs(path, exist_ok=True)
 
         path_file = os.path.join(path, filename)
@@ -112,13 +132,13 @@ class Crawler:
             "has_media": len(metadata.get("media", [])) if self._media else False
         }
 
-        with open(path_file, "w") as f:
-            mkdwn: str = self.__parse_markdown(result=response, fit=self._fit_markdown)
+        mkdwn: str = self.__parse_markdown(result=response, fit=self._fit_markdown)
 
-            f.write(mkdwn)
+        if mkdwn:
+            with open(path_file, "w") as f:
+                f.write(mkdwn)
 
         return file_metadata
-
     def _update_links_queue(self, links: None | dict):
         """
         Updates the Queue with the next links to crawl
@@ -190,10 +210,17 @@ class Crawler:
 
         Queue is a unique Queue, avoiding to crawl duplicates.
         """
+        
+        metadata = []
 
         async with AsyncWebCrawler(browser_config=self.browser_config) as _crawler:
             while not self.queue.empty():
-                url_to_fetch = self.queue.pop()
+                try:
+                    url_to_fetch = self.queue.pop()
+                except IndexError:
+                    break
+                except:
+                    raise
 
                 if self.verbose:
                     logging.info(f"Fetching {url_to_fetch}, {len(self.queue)} links left.")
@@ -207,9 +234,16 @@ class Crawler:
                     raise RuntimeError(f"""Something went wrong on Crawler Stage.\n\n{result.error_message}""")
 
                 file_metadata = self._save_file(response=result)
+                metadata.append(file_metadata)
                 self._update_links_queue(links=result.links)
 
                 if self._media:
                     self._save_media(
                         media=result.media, page_name=file_metadata.get("title", "")
                     )
+
+        metadata_path = os.path.join(self._base_data_path, "metadata.json")
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f, indent=4)
+
+        logging.info(f"Completed! Crawled {len(self.queue.seen)} files.")
