@@ -10,7 +10,7 @@ from crawl4ai.models import CrawlResult, MarkdownGenerationResult
 from crawl4ai.async_configs import CrawlerRunConfig, BrowserConfig, CacheMode
 from crawl4ai.content_filter_strategy import PruningContentFilter
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
-from crawler.queue import URLQueue
+from utils.queue import UniqueQueue
 
 __all__ = ["Crawler"]
 
@@ -67,7 +67,7 @@ class Crawler:
 
         self.browser_config = BrowserConfig(verbose=self.verbose)
         self.crawler_config = CrawlerRunConfig(**crawler_ops)
-        self.queue = URLQueue()
+        self.queue = UniqueQueue()
         self.queue.add(url)
 
     @staticmethod
