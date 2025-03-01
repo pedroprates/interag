@@ -27,22 +27,21 @@ class Crawler:
     async def crawl(self):
         
         # TODO: Docstring
-        # TODO: Logging with verbose
         # TODO: Implement media
         # TODO: Implement saving heap
 
-        while not self.queue.empty():
-            url_to_fetch = self.queue.pop()
+        async with AsyncWebCrawler(browser_config=self.browser_config) as _crawler:
+            while not self.queue.empty():
+                url_to_fetch = self.queue.pop()
 
-            if self.verbose:
-                logging.info(f"Fetching {url_to_fetch}, {len(self.queue)} links left.")
+                if self.verbose:
+                    logging.info(f"Fetching {url_to_fetch}, {len(self.queue)} links left.")
 
-            async with AsyncWebCrawler(browser_config=self.browser_config) as crawler:
-                result = await crawler.arun(
+                result = await _crawler.arun(
                     url=url_to_fetch,
-                    config=self.crawler_config
+                    config=self.crawler_config,
                 )
 
                 if not result.success:
-                    raise RuntimeError("Something bad happened.")
+                    raise RuntimeError(f"""Something went wrong on Crawler Stage.\n\n{result.error_message}""")
 
