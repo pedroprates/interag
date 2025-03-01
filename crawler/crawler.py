@@ -5,7 +5,11 @@ import requests
 from crawl4ai import AsyncWebCrawler
 from crawl4ai.models import CrawlResult, MarkdownGenerationResult
 from crawl4ai.async_configs import CrawlerRunConfig, BrowserConfig, CacheMode
+from crawl4ai.content_filter_strategy import PruningContentFilter
+from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 from crawler.queue import URLQueue
+
+__all__ = ["Crawler"]
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +24,28 @@ class Crawler:
         self._pages_path = "pages"
         self._media_path = "media"
 
+        crawler_ops = {
+            "word_count_threshold": 10,
+            "exclude_external_links": True,
+            "remove_overlay_elements": True,
+            "process_iframes": True,
+            "excluded_tags": ["form"],
+            "cache_mode": CacheMode.ENABLED,
+        }
+
+        if self._fit_markdown:
+            _prune_filter = PruningContentFilter(
+                threshold=.45,
+                threshold_type="dynamic",
+                min_word_threshold=5,
+            )
+
+            _md_generator = DefaultMarkdownGenerator(content_filter=_prune_filter)
+
+            crawler_ops["markdown_generator"] = _md_generator
+
         self.browser_config = BrowserConfig(verbose=self.verbose)
-        self.crawler_config = CrawlerRunConfig(
-            word_count_threshold=10,
-            exclude_external_links=True,
-            remove_overlay_elements=True,
-            process_iframes=True,
-            excluded_tags=["form"],
-            cache_mode=CacheMode.ENABLED,
-        )
+        self.crawler_config = CrawlerRunConfig(**crawler_ops)
         self.queue = URLQueue()
         self.queue.add(url)
 
@@ -81,7 +98,11 @@ class Crawler:
         description = title if not _description else _description
 
         filename = "_".join(title.lower().strip().split()) + ".md"
-        path_file = os.path.join(self._base_data_path, self._pages_path, filename)
+        path = os.path.join(self._base_data_path, self._pages_path)
+        
+        os.makedirs(path, exist_ok=True)
+
+        path_file = os.path.join(path, filename)
 
         file_metadata = {
             "path": path_file,
@@ -148,7 +169,11 @@ class Crawler:
             if file_response.status_code == 200:
                 filename = url.split("/")[-1]
                 page_name = "_".join(page_name.lower().strip().split())
-                filepath = os.path.join(self._base_data_path, self._media_path, page_name, filename)
+                path = os.path.join(self._base_data_path, self._media_path, page_name)
+
+                os.makedirs(path, exist_ok=True)
+
+                filepath = os.path.join(path, filename)
 
                 with open(filepath, "wb") as file:
                     file.write(file_response.content)
