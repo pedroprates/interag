@@ -38,6 +38,9 @@ class Crawler:
         self._media_path = "media"
         self._remove_tags = remove_tags
         self._cache = cache
+        
+        # Only while all media types are not implemented yet
+        self._media_warn = False
 
         if clean and os.path.exists(self._base_data_path):
             shutil.rmtree(self._base_data_path)
@@ -53,7 +56,7 @@ class Crawler:
 
         if self._fit_markdown:
             _prune_filter = PruningContentFilter(
-                threshold=.8,
+                threshold=.45,
                 threshold_type="dynamic",
                 min_word_threshold=5,
             )
@@ -176,7 +179,9 @@ class Crawler:
             media (dict | list[dict]): the media variable from the CrawlerResult
             page_name (str): page name that the crawler sent the media from
         """
-        logging.warning("Only Images are available to download, Audio and Videos are not yet implemented")
+        if not self._media_warn:
+            logging.warning("Only Images are available to download, Audio and Videos are not yet implemented")
+            self._media_warn = True
 
         if isinstance(media, dict):
             media = media["images"]
@@ -223,7 +228,7 @@ class Crawler:
                     raise
 
                 if self.verbose:
-                    logging.info(f"Fetching {url_to_fetch}, {len(self.queue)} links left.")
+                    logging.info(f"Fetching {url_to_fetch}")
 
                 result = await _crawler.arun(
                     url=url_to_fetch,
