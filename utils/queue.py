@@ -1,6 +1,6 @@
 from collections import deque
 
-class URLQueue:
+class UniqueQueue:
     def __init__(self):
         self.queue = deque()
         self.seen = set()
