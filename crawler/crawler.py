@@ -16,6 +16,8 @@ __all__ = ["Crawler"]
 
 logger = logging.getLogger(__name__)
 
+# TODO: HTML or MD? What is best?
+
 class Crawler:
     """Crawler class responsible to crawl the URL and all the internal links referenced on it"""
 
@@ -222,6 +224,8 @@ class Crawler:
             while not self.queue.empty():
                 try:
                     url_to_fetch = self.queue.pop()
+                    if not isinstance(url_to_fetch, str):
+                        raise ValueError(f"URL expected to be str, got {type(url_to_fetch)} instead")
                 except IndexError:
                     break
                 except:
