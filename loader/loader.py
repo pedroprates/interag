@@ -4,7 +4,6 @@ import logging
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
 from langchain_openai import ChatOpenAI
-from playwright.async_api import Response
 from utils.queue import UniqueQueue
 from states.loader import LoaderState, GarbageCollectorStructure, RewriterStructure
 from loader.vector_store import VectorStore
